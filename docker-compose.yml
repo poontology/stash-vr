@@ -1,7 +1,7 @@
 version: "3.0"
 services:
   stash-vr:
-    image: ofl0w/stash-vr:latest
+    image: poontology/stash-vr:latest
     #build: .
     container_name: stash-vr
     restart: unless-stopped

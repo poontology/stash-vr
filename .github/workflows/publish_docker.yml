@@ -35,7 +35,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4.3.0
         with:
-          images: ofl0w/stash-vr
+          images: poontology/stash-vr
       - name: Set outputs
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
