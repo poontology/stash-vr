@@ -10,6 +10,9 @@ type VideoData struct {
 }
 
 func (vd VideoData) Title() string {
+	if len(vd.SceneParts.Files) == 0 {
+		return util.FirstNonEmpty(vd.SceneParts.Title)
+	}
 	return util.FirstNonEmpty(vd.SceneParts.Title, &vd.SceneParts.Files[0].Basename)
 }
 

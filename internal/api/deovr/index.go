@@ -1,6 +1,9 @@
 package deovr
 
 import (
+	"context"
+
+	"github.com/rs/zerolog/log"
 	"stash-vr/internal/library"
 	"stash-vr/internal/stash"
 	"stash-vr/internal/util"
@@ -24,27 +27,36 @@ type previewDataDto struct {
 	VideoUrl     string  `json:"video_url"`
 }
 
-func buildIndex(sections []library.Section, vds map[string]*library.VideoData, baseUrl string) (indexDto, error) {
+func buildIndex(ctx context.Context, sections []library.Section, vds map[string]*library.VideoData, baseUrl string) (indexDto, error) {
 	index := indexDto{Authorized: "1", Scenes: make([]sceneDto, len(sections))}
 
 	for i, section := range sections {
 		s := sceneDto{
 			Name: section.Name,
-			List: make([]previewDataDto, len(section.Ids)),
+			List: make([]previewDataDto, 0, len(section.Ids)),
 		}
 		index.Scenes[i] = s
 
-		for j, sectionSceneId := range section.Ids {
+		for _, sectionSceneId := range section.Ids {
 			vd := vds[sectionSceneId]
-			s.List[j] = previewDataDto{
+			if vd == nil {
+				log.Ctx(ctx).Warn().Str("sceneId", sectionSceneId).Msg("scene not found in library, skipping")
+				continue
+			}
+			if len(vd.SceneParts.Files) == 0 {
+				log.Ctx(ctx).Warn().Str("sceneId", vd.SceneParts.Id).Str("title", vd.Title()).Msg("scene has no files, skipping")
+				continue
+			}
+			dto := previewDataDto{
 				Id:          vd.SceneParts.Id,
 				Title:       vd.Title(),
 				VideoLength: int(vd.SceneParts.Files[0].Duration),
 				VideoUrl:    getVideoDataUrl(baseUrl, vd.Id()),
 			}
 			if vd.SceneParts.Paths.Screenshot != nil {
-				s.List[j].ThumbnailUrl = util.Ptr(stash.ApiKeyed(*vd.SceneParts.Paths.Screenshot))
+				dto.ThumbnailUrl = util.Ptr(stash.ApiKeyed(*vd.SceneParts.Paths.Screenshot))
 			}
+			s.List = append(s.List, dto)
 		}
 	}
 

@@ -274,10 +274,10 @@ func (h *httpHandler) eventsHandler(w http.ResponseWriter, req *http.Request) {
 	switch ev.Event {
 	case evPlay:
 		if h.ps == nil {
-			h.ps = newPlayback(vd)
+			h.ps = newPlayback(ctx, vd)
 		} else if h.ps.videoId != videoId {
 			h.ps.handleStop(ctx, h.libraryService, minPlayFraction)
-			h.ps = newPlayback(vd)
+			h.ps = newPlayback(ctx, vd)
 		} else {
 			h.ps.handleResume()
 		}

@@ -30,7 +30,7 @@ func (h httpHandler) indexHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dto, err := buildIndex(sections, vds, baseUrl)
+	dto, err := buildIndex(ctx, sections, vds, baseUrl)
 	if err != nil {
 		log.Ctx(ctx).Error().Err(err).Msg("failed to build index")
 		w.WriteHeader(http.StatusInternalServerError)

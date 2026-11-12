@@ -81,6 +81,9 @@ func addMultiTracks(target *[]tagDto, tags []tagDto, startTrack int) int {
 }
 
 func getTags(vd *library.VideoData) []tagDto {
+	if len(vd.SceneParts.Files) == 0 {
+		return nil
+	}
 	duration := vd.SceneParts.Files[0].Duration * 1000
 
 	var tags []tagDto

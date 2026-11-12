@@ -29,7 +29,15 @@ type scanDataDto struct {
 
 func buildScan(ctx context.Context, vds map[string]*library.VideoData, baseUrl string) (*scanDocDto, error) {
 	scanDoc := scanDocDto{ScanData: make([]scanDataDto, 0, len(vds))}
-	for _, vd := range vds {
+	for id, vd := range vds {
+		if vd == nil {
+			log.Ctx(ctx).Warn().Str("sceneId", id).Msg("scene data is nil, skipping")
+			continue
+		}
+		if len(vd.SceneParts.Files) == 0 {
+			log.Ctx(ctx).Warn().Str("sceneId", vd.SceneParts.Id).Str("title", vd.Title()).Msg("scene has no files, skipping")
+			continue
+		}
 		scanData := videoDataToScanDataDto(ctx, vd, baseUrl)
 		scanDoc.ScanData = append(scanDoc.ScanData, scanData)
 	}

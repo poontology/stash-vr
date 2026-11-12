@@ -8,7 +8,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func newPlayback(vd *library.VideoData) *playbackState {
+func newPlayback(ctx context.Context, vd *library.VideoData) *playbackState {
+	if len(vd.SceneParts.Files) == 0 {
+		log.Ctx(ctx).Warn().Str("sceneId", vd.Id()).Msg("scene has no files, not tracking playback")
+		return nil
+	}
 	return &playbackState{
 		videoId:       vd.Id(),
 		videoDuration: vd.SceneParts.Files[0].Duration,
