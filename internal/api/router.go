@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog/log"
+	"io"
 	"net/http"
 	"stash-vr/internal/api/deovr"
 	"stash-vr/internal/api/heatmap"
@@ -19,6 +20,9 @@ import (
 func Router(libraryService *library.Service) *chi.Mux {
 	router := chi.NewRouter()
 
+	// Outermost: must run after everything else, so the body is drained
+	// before the connection closes (see drainBody).
+	router.Use(drainBody)
 	router.Use(requestLogger)
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Compress(5, "application/json"))
@@ -36,6 +40,22 @@ func Router(libraryService *library.Service) *chi.Mux {
 	router.Get("/*", http.FileServerFS(static.Fs).ServeHTTP)
 
 	return router
+}
+
+// drainBody fully reads the request body after the handler runs. Go's
+// http server only drains bodies when reusing a keep-alive connection; on a
+// `Connection: close` request (FFmpeg always sends this) an unread body
+// stays in the kernel receive buffer, and the kernel sends RST instead of
+// FIN when the socket closes. Slow clients (e.g. a PS5 on Wi-Fi) then fail
+// mid-response with "connection reset by peer".
+func drainBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		if r.Body != nil && r.Body != http.NoBody {
+			_, _ = io.Copy(io.Discard, http.MaxBytesReader(w, r.Body, 1<<20))
+			_ = r.Body.Close()
+		}
+	})
 }
 
 func logMod(value string, next http.Handler) http.Handler {
